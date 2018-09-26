@@ -1,6 +1,6 @@
 {
   "name": "@faizshukri/vue-password-auth-token",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Authenticate using username password which return access token",
   "main": "src/main.js",
   "scripts": {
