@@ -1,7 +1,7 @@
 {
-  "name": "@faizshukri/password-auth-jwt",
+  "name": "@faizshukri/vue-password-auth-token",
   "version": "0.1.0",
-  "description": "Authenticate using username password and work with JWT",
+  "description": "Authenticate using username password which return access token",
   "main": "src/main.js",
   "scripts": {
     "build": "rollup src/main.js --file index.js --format cjs"
