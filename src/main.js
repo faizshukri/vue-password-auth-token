@@ -26,7 +26,7 @@ class Authenticate {
     this._options = Object.assign({}, this._options, options);
     const vm = this;
 
-    Vue.prototype.$customAuth = {
+    Vue.prototype.$passwordAuth = {
       authenticate: this.authenticate.bind(this),
       reloadState: this.refreshStoreState.bind(this),
       get isAuthenticated() {
