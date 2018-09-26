@@ -6,7 +6,7 @@ class Authenticate {
     this._options = {
       base_url: null,
       client_id: null,
-      service_name: "custom-auth",
+      service_name: "password-auth",
       token_endpoint: null,
       token_type: "Bearer",
       token_header: "Authorization",
@@ -111,6 +111,18 @@ class Authenticate {
 
   setAxiosBinding() {
     const vm = this;
+
+    if (!Vue.prototype.$http) {
+      try {
+        const axios = require("axios");
+        const VueAxios = require("vue-axios");
+        Vue.use(VueAxios, axios);
+      } catch (err) {
+        console.warn(
+          "[WARN] Vue axios not found. Please install `vue-axios` package first."
+        );
+      }
+    }
 
     Vue.prototype.$http.interceptors.response.use(
       response => response,
