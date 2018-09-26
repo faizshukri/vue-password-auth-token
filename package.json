@@ -2,17 +2,21 @@
   "name": "@faizshukri/password-auth-jwt",
   "version": "0.1.0",
   "description": "Authenticate using username password and work with JWT",
-  "main": "index.js",
+  "main": "src/main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "rollup src/main.js --file index.js --format cjs"
   },
   "keywords": [],
   "author": "Faiz Shukri",
   "license": "MIT",
   "peerDependencies": {
-    "vue": "2.x"
+    "vue": "2.x",
+    "vue-axios": "2.x"
   },
   "dependencies": {
     "js-cookie": "^2.2.0"
+  },
+  "devDependencies": {
+    "rollup": "^0.66.2"
   }
 }
