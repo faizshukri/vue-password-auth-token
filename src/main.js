@@ -20,15 +20,26 @@ class Authenticate {
       }
     });
     this._refreshTimer = null;
+    this._listener = { onStateChange: null };
   }
 
   install(Vue, options) {
     this._options = Object.assign({}, this._options, options);
     const vm = this;
 
-    Vue.prototype.$passwordAuth = {
+    if (Vue.prototype.$auth) {
+      console.warn(
+        "[WARN] Other auth plugin already setup. Skipped installing password-auth."
+      );
+
+      return;
+    }
+
+    Vue.prototype.$auth = {
       authenticate: this.authenticate.bind(this),
-      reloadState: this.refreshStoreState.bind(this),
+      reloadState: this.reloadState.bind(this),
+      logout: this.logout.bind(this),
+      onStateChange: this.onStateChange.bind(this),
       get isAuthenticated() {
         return vm._store.isAuthenticated;
       },
@@ -41,7 +52,7 @@ class Authenticate {
     };
 
     this.setAxiosBinding();
-    this.refreshStoreState();
+    this.reloadState();
     this.setRefreshTimer();
   }
 
@@ -49,7 +60,7 @@ class Authenticate {
     return Cookies.get(this._options.service_name);
   }
 
-  refreshStoreState() {
+  reloadState() {
     // 1. Check cookie existence
     // No need to check expires since we set in cookie's expires itself
     const accessToken = this.getAccessToken();
@@ -57,16 +68,38 @@ class Authenticate {
     if (accessToken) {
       this._store.isAuthenticated = true;
 
+      if (this._listener.onStateChange) {
+        this._listener.onStateChange(
+          this._store.isAuthenticated,
+          this._store.user
+        );
+      }
+
       if (Object.keys(this._store.user).length === 0) {
         Vue.prototype.$http
           .get(this._options.base_url + this._options.userinfo_endpoint)
           .then(response => {
             this._store.user = response.data;
+          })
+          .catch(() => {})
+          .then(() => {
+            if (this._listener.onStateChange) {
+              this._listener.onStateChange(
+                this._store.isAuthenticated,
+                this._store.user
+              );
+            }
           });
       }
     } else {
       this._store.isAuthenticated = false;
       this._store.user = {};
+      if (this._listener.onStateChange) {
+        this._listener.onStateChange(
+          this._store.isAuthenticated,
+          this._store.user
+        );
+      }
     }
   }
 
@@ -101,7 +134,7 @@ class Authenticate {
           }
         );
 
-        this.refreshStoreState();
+        this.reloadState();
         this.setRefreshTimer();
       })
       .catch(err => {
@@ -121,6 +154,7 @@ class Authenticate {
         console.warn(
           "[WARN] Vue axios not found. Please install `vue-axios` package first."
         );
+        return;
       }
     }
 
@@ -135,7 +169,7 @@ class Authenticate {
           vm._store.isAuthenticated
         ) {
           Cookies.remove(vm._options.service_name);
-          vm.refreshStoreState();
+          vm.reloadState();
         }
         return Promise.reject(error);
       }
@@ -164,9 +198,19 @@ class Authenticate {
     );
 
     this._refreshTimer = setTimeout(
-      () => this.refreshStoreState(),
+      () => this.reloadState(),
       expiryTime + 1000 - new Date().getTime()
     );
+  }
+
+  logout() {
+    Cookies.remove(this._options.service_name);
+    Cookies.remove(`${this._options.service_name}-expiry`);
+    this.reloadState();
+  }
+
+  onStateChange(callback) {
+    this._listener.onStateChange = callback;
   }
 }
 
