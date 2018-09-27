@@ -65,15 +65,11 @@ class Authenticate {
     // No need to check expires since we set in cookie's expires itself
     const accessToken = this.getAccessToken();
 
+    const prevIsAuthenticated = this._store.isAuthenticated;
+    const prevUser = Object.keys(this._store.user).length;
+
     if (accessToken) {
       this._store.isAuthenticated = true;
-
-      if (this._listener.onStateChange) {
-        this._listener.onStateChange(
-          this._store.isAuthenticated,
-          this._store.user
-        );
-      }
 
       if (Object.keys(this._store.user).length === 0) {
         Vue.prototype.$http
@@ -83,7 +79,12 @@ class Authenticate {
           })
           .catch(() => {})
           .then(() => {
-            if (this._listener.onStateChange) {
+            // Listener exist and not the same
+            if (
+              this._listener.onStateChange &&
+              (prevIsAuthenticated !== this._store.isAuthenticated ||
+                prevUser !== Object.keys(this._store.user).length)
+            ) {
               this._listener.onStateChange(
                 this._store.isAuthenticated,
                 this._store.user
@@ -94,7 +95,11 @@ class Authenticate {
     } else {
       this._store.isAuthenticated = false;
       this._store.user = {};
-      if (this._listener.onStateChange) {
+      if (
+        this._listener.onStateChange &&
+        (prevIsAuthenticated !== this._store.isAuthenticated ||
+          prevUser !== Object.keys(this._store.user).length)
+      ) {
         this._listener.onStateChange(
           this._store.isAuthenticated,
           this._store.user
