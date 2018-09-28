@@ -1,5 +1,6 @@
 import Vue from "vue";
 import Cookies from "js-cookie";
+import urlJoin from "url-join";
 
 class Authenticate {
   constructor() {
@@ -73,7 +74,7 @@ class Authenticate {
 
       if (Object.keys(this._store.user).length === 0) {
         Vue.prototype.$http
-          .get(this._options.base_url + this._options.userinfo_endpoint)
+          .get(this._options.userinfo_endpoint)
           .then(response => {
             this._store.user = response.data;
           })
@@ -110,7 +111,7 @@ class Authenticate {
 
   authenticate({ client_id, username, password }) {
     return Vue.prototype.$http
-      .post(this._options.base_url + this._options.token_endpoint, {
+      .post(this._options.token_endpoint, {
         client_id,
         username,
         password
@@ -148,8 +149,6 @@ class Authenticate {
   }
 
   setAxiosBinding() {
-    const vm = this;
-
     if (!Vue.prototype.$http) {
       try {
         const axios = require("axios");
@@ -163,31 +162,35 @@ class Authenticate {
       }
     }
 
+    if (this._options.base_url) {
+      Vue.prototype.$http.defaults.baseURL = this._options.base_url;
+    }
+
     Vue.prototype.$http.interceptors.response.use(
       response => response,
       error => {
         // If url = base url and unauthorized, switch authenticated back to false
-        const url = new URL(error.config.url);
+        const url = new URL(urlJoin(error.config.baseURL, error.config.url));
         if (
-          url.origin === vm._options.base_url &&
+          url.origin === this._options.base_url &&
           error.response.status === 401 &&
-          vm._store.isAuthenticated
+          this._store.isAuthenticated
         ) {
-          Cookies.remove(vm._options.service_name);
-          vm.reloadState();
+          Cookies.remove(this._options.service_name);
+          this.reloadState();
         }
         return Promise.reject(error);
       }
     );
 
-    Vue.prototype.$http.interceptors.request.use(function(config) {
-      const url = new URL(config.url);
+    Vue.prototype.$http.interceptors.request.use(config => {
+      const url = new URL(urlJoin(config.baseURL, config.url));
 
       // If url = base url and authenticated, set the authorization header
-      if (url.origin === vm._options.base_url && vm._store.isAuthenticated) {
-        config.headers[vm._options.token_header] = `${
-          vm._options.token_type
-        } ${vm.getAccessToken()}`;
+      if (url.origin === config.baseURL && this._store.isAuthenticated) {
+        config.headers[this._options.token_header] = `${
+          this._options.token_type
+        } ${this.getAccessToken()}`;
       }
 
       return config;
@@ -220,7 +223,6 @@ class Authenticate {
 
   beforeEach({ redirectGuest, redirectUser }) {
     return function(to, from, next) {
-      console.log({ to, from });
       this.reloadState();
       const [
         shouldAuthenticated,
