@@ -248,8 +248,6 @@ class Authenticate {
         [false, false, []]
       );
 
-      console.log(shouldAuthenticated, shouldAuthorized, allowedRoles);
-
       if (
         to.name !== redirectGuest &&
         shouldAuthenticated &&
