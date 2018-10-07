@@ -221,49 +221,43 @@ class Authenticate {
     this._listener.onStateChange = callback;
   }
 
-  beforeEach({ redirectGuest, redirectUser }) {
-    return function(to, from, next) {
-      this.reloadState();
-      const [
-        shouldAuthenticated,
-        shouldAuthorized,
-        allowedRoles
-      ] = to.matched.reduce(
-        (accumulator, match) => {
-          let [
-            shouldAuthenticated,
-            shouldAuthorized,
-            allowedRoles
-          ] = accumulator;
-          if (match.meta.auth) shouldAuthenticated = true;
-          else if (match.meta.auth === false) shouldAuthenticated = false;
+  redirectRouteName({ redirectGuest, redirectUser, to }) {
+    this.reloadState();
+    const [
+      shouldAuthenticated,
+      shouldAuthorized,
+      allowedRoles
+    ] = to.matched.reduce(
+      (accumulator, match) => {
+        let [shouldAuthenticated, shouldAuthorized, allowedRoles] = accumulator;
+        if (match.meta.auth) shouldAuthenticated = true;
+        else if (match.meta.auth === false) shouldAuthenticated = false;
 
-          if (Array.isArray(match.meta.auth) && match.meta.auth.length > 0) {
-            shouldAuthorized = true;
-            allowedRoles = allowedRoles.concat(match.meta.auth);
-          }
+        if (Array.isArray(match.meta.auth) && match.meta.auth.length > 0) {
+          shouldAuthorized = true;
+          allowedRoles = allowedRoles.concat(match.meta.auth);
+        }
 
-          return [shouldAuthenticated, shouldAuthorized, allowedRoles];
-        },
-        [false, false, []]
-      );
+        return [shouldAuthenticated, shouldAuthorized, allowedRoles];
+      },
+      [false, false, []]
+    );
 
-      if (
-        to.name !== redirectGuest &&
-        shouldAuthenticated &&
-        !this._store.isAuthenticated
-      ) {
-        next({ name: redirectGuest });
-      } else if (
-        to.name !== redirectUser &&
-        shouldAuthorized &&
-        !allowedRoles.includes(this._store.user.role)
-      ) {
-        next({ name: redirectUser });
-      } else {
-        next();
-      }
-    };
+    if (
+      to.name !== redirectGuest &&
+      shouldAuthenticated &&
+      !this._store.isAuthenticated
+    ) {
+      return redirectGuest;
+    } else if (
+      to.name !== redirectUser &&
+      shouldAuthorized &&
+      !allowedRoles.includes(this._store.user.role)
+    ) {
+      return redirectUser;
+    } else {
+      return null;
+    }
   }
 }
 
